@@ -1,25 +1,40 @@
 const express = require('express')
-const fs = require("fs");
+const { fnReadFile, fnWriteFile } = require("./utils.js")
 const app = express();
+
+// Middleware para procesar json
 app.use(express.json())
-const PORT = 3000
 
-app.post('/canciones', function (req, res) {
-    const { id, cancion, artista, tono } = req.body;
+const PORT = process.env.PORT || 3000
 
+// Muestra página inicio
+app.get('/', (req, res) => res.status(200).sendFile(__dirname + "/index.html"))
+
+// Agregar una nueva canción
+app.post('/canciones', (req, res) => {
+    const canciones = fnReadFile();
+    canciones.push(req.body);
+    fnWriteFile(canciones);
+    res.status(200).send("Canción agregada!");
 })
 
-app.get('/canciones', function (req, res) {
-    const readRepertorio = fs.readFileSync("repertorio.json", "utf8");
-    res.json(readRepertorio)
+// Obtener todas las canciones
+app.get('/canciones', (req, res) => {
+    res.status(200).json(fnReadFile())
 })
 
-app.put('/canciones/:id', function (req, res) {
-    res.send('Hello World')
+// Editar una canción
+app.put('/canciones/:id', (req, res) => {
+    const editRepertorio = fnReadFile().map(r => r.id == req.params.id ? req.body : r)
+    fnWriteFile(editRepertorio);
+    res.status(200).send('Canción Editada')
 })
 
-app.delete('/canciones/:id', function (req, res) {
-    res.send('Hello World')
+// Borrar una canción
+app.delete('/canciones/:id', (req, res) => {
+    const filterRepertorio = fnReadFile().filter(r => r.id != req.params.id);
+    fnWriteFile(filterRepertorio);
+    res.status(200).send('Canción eliminada!');
 })
 
 app.listen(PORT, console.log(`Server on port: ${PORT}`))
